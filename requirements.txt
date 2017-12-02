@@ -1,0 +1,6 @@
+﻿Flask==0.12.2
+Flask-SocketIO==2.9.2
+python-socketio==1.9.0
+python-engineio==2.0.2
+eventlet==0.21.0
+requests==2.18.4
