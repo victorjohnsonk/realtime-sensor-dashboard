@@ -1,60 +1,40 @@
-<!doctype html>
-<html>
+<script>
+    var ctx = document.getElementById('pmChart').getContext('2d');
+    var colors = {
+        'pm25': 'rgba(75,192,192,1)',
+        'pm10': 'rgba(255,99,132,1)',
+        'o3': 'rgba(255,206,86,1)'
+    };
 
-<head>
-    <title>Real-Time Sensor Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.0/Chart.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-        }
+    var datasets = Object.keys(colors).map(function (k) {
+        return { label: k.toUpperCase(), data: [], borderColor: colors[k], fill: false };
+    });
 
-        canvas {
-            width: 100%;
-            max-width: 800px;
-        }
-    </style>
-</head>
-
-<body>
-    <h2>Live Particulate Matter Readings – Los Angeles</h2>
-    <canvas id="pmChart" width="800" height="400"></canvas>
-
-    <script>
-        var ctx = document.getElementById('pmChart').getContext('2d');
-        var pmChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'PM2.5 (µg/m³)',
-                    data: [],
-                    borderColor: 'rgba(75,192,192,1)',
-                    fill: false
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    xAxes: [{ display: true }],
-                    yAxes: [{ display: true, ticks: { beginAtZero: true } }]
-                }
+    var pmChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: datasets },
+        options: {
+            responsive: true,
+            scales: {
+                xAxes: [{ display: true }],
+                yAxes: [{ display: true, ticks: { beginAtZero: true } }]
             }
+        }
+    });
+
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+    socket.on('new_data', function (data) {
+        var grouped = {};
+        data.forEach(function (item) {
+            if (!grouped[item.parameter]) grouped[item.parameter] = [];
+            grouped[item.parameter].push(item.value);
         });
 
-        var socket = io.connect('http://' + document.domain + ':' + location.port);
-        socket.on('new_data', function (data) {
-            pmChart.data.labels = [];
-            pmChart.data.datasets[0].data = [];
-            data.forEach(function (item) {
-                pmChart.data.labels.push(item.location);
-                pmChart.data.datasets[0].data.push(item.value);
-            });
-            pmChart.update();
-        });
-    </script>
-</body>
+        pmChart.data.labels = Object.keys(grouped.pm25 || {}).map(String);
 
-</html>
+        pmChart.data.datasets.forEach(function (ds) {
+            ds.data = grouped[ds.label.toLowerCase()] || [];
+        });
+        pmChart.update();
+    });
+</script>
