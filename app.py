@@ -30,6 +30,11 @@ def index():
 def data():
     return jsonify(latest_data)
 
+@app.route('/eda')
+def eda():
+    return render_template('eda.html')
+
+
 if __name__ == '__main__':
     thread = threading.Thread(target=background_fetch, daemon=True)
     thread.start()

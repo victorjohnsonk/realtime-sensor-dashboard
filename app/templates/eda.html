@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Real-Time Sensor Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.0/Chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        canvas {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 20px;
+        }
+
+        a {
+            text-decoration: none;
+            color: #007bff;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Exploratory Data Analysis</h2>
+    <p><a href="/">Back</a></p>
+    <canvas id="histChart" width="800" height="400"></canvas>
+
+    <script>
+        // Simulated historical data (we’ll later make this dynamic)
+        var days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        var pm25 = [15, 22, 18, 25, 30, 20, 19];
+        var pm10 = [30, 45, 38, 52, 58, 43, 40];
+        var o3 = [10, 12, 15, 14, 13, 16, 11];
+
+        var ctx = document.getElementById('histChart').getContext('2d');
+        var chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: days,
+                datasets: [
+                    { label: 'PM2.5', backgroundColor: 'rgba(75,192,192,0.5)', data: pm25 },
+                    { label: 'PM10', backgroundColor: 'rgba(255,99,132,0.5)', data: pm10 },
+                    { label: 'O3', backgroundColor: 'rgba(255,206,86,0.5)', data: o3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    yAxes: [{ ticks: { beginAtZero: true } }]
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
