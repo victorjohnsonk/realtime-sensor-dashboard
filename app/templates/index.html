@@ -4,22 +4,55 @@
 <head>
     <title>Real-Time Sensor Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.0/Chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        canvas {
+            width: 100%;
+            max-width: 800px;
+        }
+    </style>
 </head>
 
 <body>
-    <h2>Live PM2.5 Readings (Los Angeles)</h2>
-    <ul id="readings"></ul>
+    <h2>Live Particulate Matter Readings – Los Angeles</h2>
+    <canvas id="pmChart" width="800" height="400"></canvas>
 
     <script>
+        var ctx = document.getElementById('pmChart').getContext('2d');
+        var pmChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'PM2.5 (µg/m³)',
+                    data: [],
+                    borderColor: 'rgba(75,192,192,1)',
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    xAxes: [{ display: true }],
+                    yAxes: [{ display: true, ticks: { beginAtZero: true } }]
+                }
+            }
+        });
+
         var socket = io.connect('http://' + document.domain + ':' + location.port);
         socket.on('new_data', function (data) {
-            var list = document.getElementById('readings');
-            list.innerHTML = '';
+            pmChart.data.labels = [];
+            pmChart.data.datasets[0].data = [];
             data.forEach(function (item) {
-                var li = document.createElement('li');
-                li.innerText = item.location + ': ' + item.value + ' ' + item.unit;
-                list.appendChild(li);
+                pmChart.data.labels.push(item.location);
+                pmChart.data.datasets[0].data.push(item.value);
             });
+            pmChart.update();
         });
     </script>
 </body>
