@@ -2,8 +2,9 @@
 <html>
 
 <head>
-    <title>Real-Time Sensor Dashboard</title>
+    <title>EDA – Real-Time Sensor Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.0/Chart.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,23 +21,41 @@
             text-decoration: none;
             color: #007bff;
         }
+
+        #histogram {
+            margin-top: 50px;
+        }
+
+        .bar {
+            fill: steelblue;
+        }
+
+        .bar:hover {
+            fill: darkorange;
+        }
+
+        .axis text {
+            font-size: 12px;
+        }
     </style>
 </head>
 
 <body>
     <h2>Exploratory Data Analysis</h2>
-    <p><a href="/">Back</a></p>
+    <p><a href="/">← Back to Live Dashboard</a></p>
+
     <canvas id="histChart" width="800" height="400"></canvas>
+    <div id="histogram"></div>
 
     <script>
-        // Simulated historical data (we’ll later make this dynamic)
+        // Chart.js historical trend (still static for now)
         var days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
         var pm25 = [15, 22, 18, 25, 30, 20, 19];
         var pm10 = [30, 45, 38, 52, 58, 43, 40];
         var o3 = [10, 12, 15, 14, 13, 16, 11];
 
         var ctx = document.getElementById('histChart').getContext('2d');
-        var chart = new Chart(ctx, {
+        new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: days,
@@ -46,13 +65,62 @@
                     { label: 'O3', backgroundColor: 'rgba(255,206,86,0.5)', data: o3 }
                 ]
             },
-            options: {
-                responsive: true,
-                scales: {
-                    yAxes: [{ ticks: { beginAtZero: true } }]
-                }
-            }
+            options: { responsive: true, scales: { yAxes: [{ ticks: { beginAtZero: true } }] } }
         });
+
+        // D3 interactive histogram for PM2.5 distribution
+        var data = pm25;
+        var margin = { top: 20, right: 30, bottom: 40, left: 40 },
+            width = 800 - margin.left - margin.right,
+            height = 300 - margin.top - margin.bottom;
+
+        var svg = d3.select("#histogram")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        var x = d3.scaleLinear()
+            .domain([0, d3.max(data)])
+            .range([0, width]);
+
+        var bins = d3.histogram()
+            .domain(x.domain())
+            .thresholds(x.ticks(10))(data);
+
+        var y = d3.scaleLinear()
+            .domain([0, d3.max(bins, function (d) { return d.length; })])
+            .range([height, 0]);
+
+        svg.selectAll(".bar")
+            .data(bins)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", function (d) { return x(d.x0); })
+            .attr("y", function (d) { return y(d.length); })
+            .attr("width", function (d) { return x(d.x1) - x(d.x0) - 1; })
+            .attr("height", function (d) { return height - y(d.length); });
+
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height + 35)
+            .attr("text-anchor", "middle")
+            .text("PM2.5 Value (µg/m³)");
+
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -35)
+            .attr("x", -height / 2)
+            .attr("text-anchor", "middle")
+            .text("Frequency");
     </script>
 </body>
 
