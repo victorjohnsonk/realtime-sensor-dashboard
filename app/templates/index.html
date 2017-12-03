@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Real-Time Sensor Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+</head>
+
+<body>
+    <h2>Live PM2.5 Readings (Los Angeles)</h2>
+    <ul id="readings"></ul>
+
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+        socket.on('new_data', function (data) {
+            var list = document.getElementById('readings');
+            list.innerHTML = '';
+            data.forEach(function (item) {
+                var li = document.createElement('li');
+                li.innerText = item.location + ': ' + item.value + ' ' + item.unit;
+                list.appendChild(li);
+            });
+        });
+    </script>
+</body>
+
+</html>
