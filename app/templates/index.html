@@ -1,40 +1,96 @@
-<script>
-    var ctx = document.getElementById('pmChart').getContext('2d');
-    var colors = {
-        'pm25': 'rgba(75,192,192,1)',
-        'pm10': 'rgba(255,99,132,1)',
-        'o3': 'rgba(255,206,86,1)'
-    };
+<!doctype html>
+<html>
 
-    var datasets = Object.keys(colors).map(function (k) {
-        return { label: k.toUpperCase(), data: [], borderColor: colors[k], fill: false };
-    });
-
-    var pmChart = new Chart(ctx, {
-        type: 'line',
-        data: { labels: [], datasets: datasets },
-        options: {
-            responsive: true,
-            scales: {
-                xAxes: [{ display: true }],
-                yAxes: [{ display: true, ticks: { beginAtZero: true } }]
-            }
+<head>
+    <title>Real-Time Sensor Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.0/Chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
         }
-    });
 
-    var socket = io.connect('http://' + document.domain + ':' + location.port);
-    socket.on('new_data', function (data) {
-        var grouped = {};
-        data.forEach(function (item) {
-            if (!grouped[item.parameter]) grouped[item.parameter] = [];
-            grouped[item.parameter].push(item.value);
+        canvas {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            margin-right: 5px;
+        }
+
+        select {
+            margin-right: 10px;
+        }
+
+        #status {
+            margin-top: 10px;
+            color: gray;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Live Air Quality Dashboard</h2>
+
+    <form id="filterForm">
+        <label for="city">City:</label>
+        <select id="city">
+            <option value="Los Angeles">Los Angeles</option>
+            <option value="New Delhi">New Delhi</option>
+            <option value="London">London</option>
+            <option value="Beijing">Beijing</option>
+        </select>
+
+        <label for="parameter">Pollutant:</label>
+        <select id="parameter">
+            <option value="pm25">PM2.5</option>
+            <option value="pm10">PM10</option>
+            <option value="o3">O3</option>
+        </select>
+
+        <button type="submit">Update</button>
+    </form>
+
+    <div id="status">Currently viewing Los Angeles – PM2.5</div>
+    <canvas id="pmChart" width="800" height="400"></canvas>
+
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        var ctx = document.getElementById('pmChart').getContext('2d');
+        var pmChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: '', data: [], borderColor: 'rgba(75,192,192,1)', fill: false }] },
+            options: { responsive: true, scales: { yAxes: [{ ticks: { beginAtZero: true } }] } }
         });
 
-        pmChart.data.labels = Object.keys(grouped.pm25 || {}).map(String);
+        var city = 'Los Angeles';
+        var parameter = 'pm25';
 
-        pmChart.data.datasets.forEach(function (ds) {
-            ds.data = grouped[ds.label.toLowerCase()] || [];
+        socket.on('new_data', function (data) {
+            var filtered = data.filter(function (d) {
+                return d.parameter === parameter;
+            });
+            pmChart.data.labels = filtered.map(function (d) { return d.location; });
+            pmChart.data.datasets[0].label = parameter.toUpperCase() + ' (' + city + ')';
+            pmChart.data.datasets[0].data = filtered.map(function (d) { return d.value; });
+            pmChart.update();
         });
-        pmChart.update();
-    });
-</script>
+
+        document.getElementById('filterForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            city = document.getElementById('city').value;
+            parameter = document.getElementById('parameter').value;
+            document.getElementById('status').innerText = 'Currently viewing ' + city + ' – ' + parameter.toUpperCase();
+            socket.emit('filter_change', { city: city, parameter: parameter });
+        });
+    </script>
+</body>
+
+</html>
