@@ -32,11 +32,27 @@
             margin-top: 10px;
             color: gray;
         }
+
+        #stats {
+            margin-top: 20px;
+            background: #f7f7f7;
+            padding: 15px;
+            border-radius: 5px;
+            width: 400px;
+        }
+
+        #stats h4 {
+            margin: 0 0 10px 0;
+        }
+
+        #stats p {
+            margin: 3px 0;
+        }
     </style>
 </head>
 
 <body>
-    <h2>Live Air Quality Dashboard</h2>
+    <h2>Live Air Quality Dashboard (OpenAQ)</h2>
 
     <form id="filterForm">
         <label for="city">City:</label>
@@ -51,14 +67,22 @@
         <select id="parameter">
             <option value="pm25">PM2.5</option>
             <option value="pm10">PM10</option>
-            <option value="o3">O3</option>
+            <option value="o3">O₃</option>
         </select>
 
         <button type="submit">Update</button>
     </form>
 
     <div id="status">Currently viewing Los Angeles – PM2.5</div>
+
     <canvas id="pmChart" width="800" height="400"></canvas>
+
+    <div id="stats">
+        <h4>Summary Statistics</h4>
+        <p>Mean: <span id="mean">–</span></p>
+        <p>Median: <span id="median">–</span></p>
+        <p>Samples: <span id="count">–</span></p>
+    </div>
 
     <script>
         var socket = io.connect('http://' + document.domain + ':' + location.port);
@@ -74,13 +98,22 @@
         var parameter = 'pm25';
 
         socket.on('new_data', function (data) {
-            var filtered = data.filter(function (d) {
-                return d.parameter === parameter;
-            });
+            var filtered = data.filter(function (d) { return d.parameter === parameter; });
+            var values = filtered.map(function (d) { return d.value; });
             pmChart.data.labels = filtered.map(function (d) { return d.location; });
             pmChart.data.datasets[0].label = parameter.toUpperCase() + ' (' + city + ')';
-            pmChart.data.datasets[0].data = filtered.map(function (d) { return d.value; });
+            pmChart.data.datasets[0].data = values;
             pmChart.update();
+
+            if (values.length > 0) {
+                var mean = values.reduce((a, b) => a + b, 0) / values.length;
+                var sorted = values.slice().sort((a, b) => a - b);
+                var mid = Math.floor(sorted.length / 2);
+                var median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+                document.getElementById('mean').innerText = mean.toFixed(2);
+                document.getElementById('median').innerText = median.toFixed(2);
+                document.getElementById('count').innerText = values.length;
+            }
         });
 
         document.getElementById('filterForm').addEventListener('submit', function (e) {
