@@ -3,6 +3,8 @@
 A local Flask application that streams live air-quality data from the OpenAQ API
 and visualizes real-time updates using Flask-SocketIO and Chart.js
 
+API Source : [https://docs.openaq.org/][OpenAQ API Docs]
+
 ## Tech Stack
 
 ```
